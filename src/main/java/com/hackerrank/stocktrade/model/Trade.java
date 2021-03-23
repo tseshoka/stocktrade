@@ -1,8 +1,9 @@
 package com.hackerrank.stocktrade.model;
 
+import java.io.Serializable;
 import java.sql.Timestamp;
 
-public class Trade {
+public class Trade implements Serializable {
     private Long id;
     private String type;
     private User user;
