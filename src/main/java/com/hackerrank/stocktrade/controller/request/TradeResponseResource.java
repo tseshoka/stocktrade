@@ -1,4 +1,4 @@
-package com.hackerrank.stocktrade.dao;
+package com.hackerrank.stocktrade.controller.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hackerrank.stocktrade.model.User;
@@ -7,7 +7,7 @@ import lombok.Data;
 import java.sql.Timestamp;
 
 @Data
-public class TradesDto {
+public class TradeResponseResource {
 
     private Long id;
     private String type;

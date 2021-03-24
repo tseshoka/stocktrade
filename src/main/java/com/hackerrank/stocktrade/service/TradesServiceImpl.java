@@ -1,52 +1,117 @@
 package com.hackerrank.stocktrade.service;
 
-import com.hackerrank.stocktrade.controller.TradeRequestResource;
+import com.hackerrank.stocktrade.dao.StockPriceDto;
 import com.hackerrank.stocktrade.dao.TradesDto;
+import com.hackerrank.stocktrade.dao.TradesDtoMapper;
+import com.hackerrank.stocktrade.model.Trade;
+import com.hackerrank.stocktrade.repository.TradeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class TradesServiceImpl implements TradesSevice {
+public class TradesServiceImpl implements TradesService {
 
-    @Override
-    public TradesDto addNewTrade(TradeRequestResource requestResource) {
+    @Autowired
+    private TradeRepository tradeRepository;
+    private final TradesDtoMapper tradesDtoMapper;
 
+    public TradesServiceImpl () {
 
-        return getTrade();
+        this.tradesDtoMapper = new TradesDtoMapper();
     }
 
     @Override
-    public TradesDto getTradeById(String id) {
+    public TradesDto addNewTrade(TradesDto dto) {
 
-        return getTrade();
+        Trade trade = tradesDtoMapper.mapToModel(dto);
+        return tradesDtoMapper.mapFromModel(tradeRepository.save(trade));
+    }
+
+    @Override
+    public TradesDto getTradeById(long id) {
+
+        return tradesDtoMapper.mapFromModel(tradeRepository.findTradeById(id));
     }
 
     @Override
     public List<TradesDto> getAllTrades() {
 
-        List<TradesDto> tradesDtos = new ArrayList<>();
-        tradesDtos.add(getTrade());
-
-        return tradesDtos;
+        return tradesDtoMapper.mapFromModel(tradeRepository.findAll());
     }
 
     @Override
-    public TradesDto getTradeByUserId(String userID) {
-        return getTrade();
+    public List<TradesDto> getTradeByUserId(long userID) {
+
+        List<TradesDto> trades = new ArrayList<>();
+
+        for (Trade trade : tradeRepository.findAll()) {
+
+            if(trade.getUser().getId().equals(userID)) {
+                trades.add(tradesDtoMapper.mapFromModel(trade));
+            }
+        }
+
+        return trades;
     }
 
-    public TradesDto getTrade () {
+    @Override
+    public List<TradesDto> getAllTradesByStockSymbolAndTradeTypeInDateRange(String symbol, String type, LocalDateTime startDate, LocalDateTime endDate) {
 
-        TradesDto tradesDto = new TradesDto();
-        tradesDto.setPrice(55f);
-        tradesDto.setId(1l);
-        tradesDto.setType("buy");
-        tradesDto.setSymbol("AC");
-        tradesDto.setTimestamp(new Timestamp(1616480520));
+        List<TradesDto> trades = new ArrayList<>();
 
-        return tradesDto;
+        for (Trade trade : tradeRepository.findAll()) {
+
+            if(trade.getSymbol().equalsIgnoreCase(symbol) && trade.getType().equalsIgnoreCase(type)
+                && (trade.getTimestamp().toLocalDateTime().isAfter(startDate) && trade.getTimestamp().toLocalDateTime().isBefore(endDate.withHour(23).minusMinutes(59)))) {
+
+                trades.add(tradesDtoMapper.mapFromModel(trade));
+            }
+        }
+
+        return trades;
+    }
+
+    @Override
+    public StockPriceDto getHighestAndLowestPriceByStockSymbolInDateRange(String stockSymbol, LocalDateTime start, LocalDateTime endDate) {
+
+        List<TradesDto> trades = new ArrayList<>();
+        StockPriceDto dto = new StockPriceDto();
+
+        for (Trade trade : tradeRepository.findAll()) {
+
+            if (trade.getSymbol().equalsIgnoreCase(stockSymbol) && (trade.getTimestamp().toLocalDateTime().isAfter(start) &&
+                    trade.getTimestamp().toLocalDateTime().isBefore(endDate))) {
+                trades.add(tradesDtoMapper.mapFromModel(trade));
+            }
+        }
+
+        double highest = trades.get(0).getPrice();
+        double lowest = trades.get(0).getPrice();
+
+        for (TradesDto tradesDto: trades) {
+
+            if (tradesDto.getPrice() >= highest) {
+                highest = tradesDto.getPrice();
+                dto.setHighest(highest);
+                dto.setSymbol(tradesDto.getSymbol());
+            }
+
+            if (tradesDto.getPrice() <= lowest) {
+                lowest = tradesDto.getPrice();
+                dto.setLowest(lowest);
+                dto.setSymbol(tradesDto.getSymbol());
+            }
+        }
+
+        return dto;
+    }
+
+    @Override
+    public void deleteAll() {
+        tradeRepository.deleteAll();
     }
 }

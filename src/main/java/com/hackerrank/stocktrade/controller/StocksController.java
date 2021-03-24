@@ -1,38 +1,57 @@
 package com.hackerrank.stocktrade.controller;
 
+import com.hackerrank.stocktrade.controller.request.StockPriceResponse;
+import com.hackerrank.stocktrade.dao.StockPriceDto;
+import com.hackerrank.stocktrade.dao.TradesDtoMapper;
 import com.hackerrank.stocktrade.model.Trade;
+import com.hackerrank.stocktrade.service.TradesService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
-@RequestMapping(value = "/stocks")
 public class StocksController {
 
-    //TODO RAN OUT OF TIME
+    @Autowired
+    TradesService service;
+    TradesDtoMapper mapper;
 
-    @GetMapping (value = "/trades/stocks/{stockSymbol}?type={tradeType}&start={startDate}&end={endDate}",
-        consumes = MediaType.APPLICATION_JSON_VALUE,
+    public StocksController () {
+        mapper = new TradesDtoMapper();
+    }
+
+    @GetMapping (value = "/stocks/{stockSymbol}?type={type}&start={start}&end={end}",
         produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Trade> getStockTrades (@PathVariable String stockSymbol, @PathVariable String type,
-                                                 @PathVariable String start, @PathVariable String endDate) {
+    public ResponseEntity<Trade> getStockTrades (@PathVariable String stockSymbol, @RequestParam String type,
+                                                 @RequestParam String start, @RequestParam String endDate) {
 
 
         return new ResponseEntity<>(new Trade(), HttpStatus.OK);
     }
 
-    @GetMapping (value = "/trades/stocks/{stockSymbol}?price?start={startDate}&end={endDate}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
+    @GetMapping (value = "/stocks/{stockSymbol}/price?start={start}&end={end}",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Trade> getHighestAndLowestTrade (@PathVariable String stockSymbol, @PathVariable String price,
-                                                           @PathVariable String start, @PathVariable String endDate) {
+    public ResponseEntity<StockPriceResponse> getHighestAndLowestTrade (@PathVariable String stockSymbol,
+                                                                        @RequestParam String start, @RequestParam String end) {
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate startDate = LocalDate.parse(start, formatter);
+        LocalDate endDate = LocalDate.parse(end);
 
+        StockPriceDto stockPriceDto = service.getHighestAndLowestPriceByStockSymbolInDateRange(stockSymbol,
+                startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay());
 
-        return new ResponseEntity<>(new Trade(), HttpStatus.OK);
+        StockPriceResponse response = mapper.mapFrom(stockPriceDto);
+
+        if (response == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

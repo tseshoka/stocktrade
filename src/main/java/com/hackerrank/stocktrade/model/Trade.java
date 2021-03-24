@@ -1,15 +1,23 @@
 package com.hackerrank.stocktrade.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
 
+@Entity
 public class Trade implements Serializable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String type;
     private User user;
     private String symbol;
     private Integer shares;
     private Float price;
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private Timestamp timestamp;
     
     public Trade() {
